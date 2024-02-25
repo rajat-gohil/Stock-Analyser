@@ -1,0 +1,36 @@
+import yfinance as yf
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+stocks = ['AAPL', 'GOOG', 'MSFT', 'NELCAST.NS', 'NMDC.NS', 'EICHERMOT.NS', 'KOTAKBANK.NS']
+start_date = '2023-01-01'
+end_date = '2024-01-01'
+
+stock_data = {}
+for symbol in stocks:
+    try:
+        stock_data[symbol] = yf.download(symbol, start=start_date, end=end_date)
+    except Exception as e:
+        print(f"Failed to fetch data for {symbol}: {e}")
+
+for symbol in stock_data.keys():
+    short_window = 50
+    long_window = 200
+
+    stock_data[symbol]['Short_MA'] = stock_data[symbol]['Close'].rolling(window=short_window, min_periods=1).mean()
+    stock_data[symbol]['Long_MA'] = stock_data[symbol]['Close'].rolling(window=long_window, min_periods=1).mean()
+
+    stock_data[symbol]['Signal'] = 0
+    stock_data[symbol]['Signal'][short_window:] = np.where(stock_data[symbol]['Short_MA'][short_window:] > stock_data[symbol]['Long_MA'][short_window:], 1, 0)
+    stock_data[symbol]['Position'] = stock_data[symbol]['Signal'].diff()
+
+plt.figure(figsize=(14, 7))
+for symbol in stock_data.keys():
+    plt.plot(stock_data[symbol]['Close'], label=f'{symbol} Close Price')
+
+plt.title('Stock Close Prices')
+plt.xlabel('Date')
+plt.ylabel('Price')
+plt.legend()
+plt.show()
